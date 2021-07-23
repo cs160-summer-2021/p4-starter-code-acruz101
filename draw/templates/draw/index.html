@@ -36,39 +36,52 @@
 
     var socket = new WebSocket(
         'ws://' + window.location.host + '/ws/draw');
+    let params = (new URL(document.location)).searchParams;
+    let size = params.get('size');
 
-    tool.onMouseMove = function(event) { //http://paperjs.org/reference/tool/ path examples
-       path.add(event.point);
-       // You may need to add code here if you want to pass any other information.
-       socket.send("{\"x\" : " + event.point.x + ", \"y\" : " + event.point.y + ", \"uid\" : " + uid + "}" );
+    
+
+    if(size=="small") {
+      tool.onMouseMove = function(event) { //http://paperjs.org/reference/tool/ path examples
+            path.add(event.point);
+            // You may need to add code here if you want to pass any other information.
+            socket.send("{\"x\" : " + event.point.x + ", \"y\" : " + event.point.y + ", \"uid\" : " + uid + "}" );
+      }
+
+      socket.onclose = function(e) {
+        console.error('Chat socket closed unexpectedly');
+      };
+}
+
+if(size=="large") {
+  socket.onmessage = function(receivedMessage) {
+    var received = JSON.parse(receivedMessage.data);
+    console.log("Received: " + JSON.stringify(received));
+    // You will probably want to add some code here to draw more lines.
+
+
+    //NEW HERE
+    if (mapPaths.has(received.uid)) {
+      var receivedPath = mapPaths.get(received.uid);
+      receivedPath.push(new paper.Point(received.x, received.y));
+      mapPaths.set(received.uid, receivedPath);
+    } else {
+      var newPoint = new paper.Point(received.x, received.y);
+      mapPaths.set(received.uid, [newPoint]);
     }
 
-    socket.onmessage = function(receivedMessage) {
-        var received = JSON.parse(receivedMessage.data);
-        console.log("Received: " + JSON.stringify(received));
-        // You will probably want to add some code here to draw more lines.
-
-
-        //NEW HERE
-        if (mapPaths.has(received.uid)) {
-          var receivedPath = mapPaths.get(received.uid);
-          receivedPath.push(new paper.Point(received.x, received.y));
-          mapPaths.set(received.uid, receivedPath);
-        } else {
-          var newPoint = new paper.Point(received.x, received.y);
-          mapPaths.set(received.uid, [newPoint]);
-        }
-
-        for (const [pathUid, pathSegment] of mapPaths.entries()) {
-          var newPath = new paper.Path(pathSegment);
-          newPath.strokeColor = "#" + Math.floor((pathUid/10000)*16777215).toString(16);
-          newPath.strokeWidth = 10;
-        }
+    for (const [pathUid, pathSegment] of mapPaths.entries()) {
+      var newPath = new paper.Path(pathSegment);
+      newPath.strokeColor = "#" + Math.floor((pathUid/10000)*16777215).toString(16);
+      newPath.strokeWidth = 10;
+      }
     }
 
     socket.onclose = function(e) {
         console.error('Chat socket closed unexpectedly');
     };
+}
+
 
 </script>
 </html>
