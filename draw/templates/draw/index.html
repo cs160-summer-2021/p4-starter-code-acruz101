@@ -19,66 +19,56 @@
     <canvas id="myCanvas" width="750px" height="750px"></canvas>
 </body>
 <script>
-
     // setting up the canvas and one paper tool
     var canvas = document.getElementById('myCanvas');
     paper.setup(canvas);
     var tool = new paper.Tool();
-
-    var path2 = new paper.Path();
     var path = new paper.Path();
-
-
     var uid = Date.now() % 10000;
-
-
-    //var randomColor1 = Math.floor(Math.random()*16777215).toString(16);
-    var randomColor1 = Math.floor(Math.random()*16777215);
-
-    //var color = "#" + Math.floor((uid/10000)*16777215).toString(16);
-    //var color2 = "#" + Math.floor((uid/10000)*16777215).toString(16);
+    path.strokeColor = "#" + Math.floor((uid/10000)*16777215).toString(16);
     path.strokeWidth = 10;
-    path.strokeColor = "#" + randomColor1.toString(16);
 
+    //NEW HERE
+    const mapPaths = new Map();
 
     // getting the URL (you may want to use for Exercise 3)
     var url = window.location.href;
-    let params = (new URL(document.location)).searchParams;
-    let size = params.get('size');
 
-    var socket = new WebSocket('ws://' + window.location.host + '/ws/draw');
+    var socket = new WebSocket(
+        'ws://' + window.location.host + '/ws/draw');
+
+    tool.onMouseMove = function(event) { //http://paperjs.org/reference/tool/ path examples
+       path.add(event.point);
+       // You may need to add code here if you want to pass any other information.
+       socket.send("{\"x\" : " + event.point.x + ", \"y\" : " + event.point.y + ", \"uid\" : " + uid + "}" );
+    }
+
+    socket.onmessage = function(receivedMessage) {
+        var received = JSON.parse(receivedMessage.data);
+        console.log("Received: " + JSON.stringify(received));
+        // You will probably want to add some code here to draw more lines.
 
 
-        tool.onMouseMove = function(event) { //http://paperjs.org/reference/tool/ path examples
-            //var color = "#" + Math.floor((uid/10000)*16777215).toString(16);
-            path.add(event.point);
-
-            //path.strokeColor = color;
-            //path2.strokeColor = color;
-            // You may need to add code here if you want to pass any other information.
-            //socket.send("{\"x\" : " + event.point.x + ", \"y\" : " + event.point.y + ", \"uid\" : " + uid + "}" );
-            socket.send("{\"x\" : " + event.point.x + ", \"y\" : " + event.point.y + ", \"uid\" : " + uid + ", \"color\" : " + randomColor1 + "}" );
+        //NEW HERE
+        if (mapPaths.has(received.uid)) {
+          var receivedPath = mapPaths.get(received.uid);
+          receivedPath.push(new paper.Point(received.x, received.y));
+          mapPaths.set(received.uid, receivedPath);
+        } else {
+          var newPoint = new paper.Point(received.x, received.y);
+          mapPaths.set(received.uid, [newPoint]);
         }
 
-
-        socket.onmessage = function(receivedMessage) {
-            var received = JSON.parse(receivedMessage.data);
-            console.log("Received: " + JSON.stringify(received));
-            // You will probably want to add some code here to draw more lines.
-            path2.add(received);
-            path2.strokeColor = "#" + received.color.toString(16);
-            //path2.strokeColor = "#" + Math.floor((received.uid/10000)*16777215).toString(16);
-            path2.strokeWidth = 10;
-
+        for (const [pathUid, pathSegment] of mapPaths.entries()) {
+          var newPath = new paper.Path(pathSegment);
+          newPath.strokeColor = "#" + Math.floor((pathUid/10000)*16777215).toString(16);
+          newPath.strokeWidth = 10;
         }
+    }
 
-
-
-        socket.onclose = function(e) {
-            console.error('Chat socket closed unexpectedly');
-        };
-
-
+    socket.onclose = function(e) {
+        console.error('Chat socket closed unexpectedly');
+    };
 
 </script>
 </html>
