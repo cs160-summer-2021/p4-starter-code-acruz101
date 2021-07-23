@@ -30,10 +30,10 @@
 
     var uid = Date.now() % 10000;
 
-    const randomColor1 = Math.floor(Math.random()*16777215).toString(16);
-    const randomColor2 = Math.floor(Math.random()*16777215).toString(16);
-    var color = "#" + randomColor1;
-    var color2 = "#" + randomColor2;
+    // var randomColor1 = "#" + Math.floor(Math.random()*16777215).toString(16);
+    // var randomColor2 = "#" + Math.floor(Math.random()*16777215).toString(16);
+    var color = "#" + Math.floor((uid/10000)*16777215).toString(16); 
+    var color2 = "#" + Math.floor((uid/10000)*16777215).toString(16);
     path.strokeWidth = 10;
 
 
@@ -42,28 +42,30 @@
     let params = (new URL(document.location)).searchParams;
     let size = params.get('size');
 
+    var socket = new WebSocket('ws://' + window.location.host + '/ws/draw');
 
-        var socket = new WebSocket(
-            'ws://' + window.location.host + '/ws/draw');
 
         tool.onMouseMove = function(event) { //http://paperjs.org/reference/tool/ path examples
+            var color = "#" + Math.floor((uid/10000)*16777215).toString(16);
             path.add(event.point);
             path.strokeColor = color;
-
+            path2.strokeColor = color;
             // You may need to add code here if you want to pass any other information.
             socket.send("{\"x\" : " + event.point.x + ", \"y\" : " + event.point.y + ", \"uid\" : " + uid + "}" );
-            // Task 1B: socket.send("{\"x\" : " + event.point.x + ", \"y\" : " + event.point.y + ", \"uid\" : " + uid + ", \"color\" : "+ color + "}" );
+            
         }
 
         socket.onmessage = function(receivedMessage) {
             var received = JSON.parse(receivedMessage.data);
             console.log("Received: " + JSON.stringify(received));
             // You will probably want to add some code here to draw more lines.
+            
+            path2.strokeColor = "#" + Math.floor((received.uid/10000)*16777215).toString(16);
             path2.strokeWidth = 10;
-            path2.strokeColor = color2;
             path2.add(received);
-            //path.add(received);
         }
+
+        
 
         socket.onclose = function(e) {
             console.error('Chat socket closed unexpectedly');
