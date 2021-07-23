@@ -25,19 +25,20 @@
     paper.setup(canvas);
     var tool = new paper.Tool();
 
-
+    var path2 = new paper.Path();
     var path = new paper.Path();
 
 
     var uid = Date.now() % 10000;
 
+
     //var randomColor1 = Math.floor(Math.random()*16777215).toString(16);
     var randomColor1 = Math.floor(Math.random()*16777215);
-
 
     //var color = "#" + Math.floor((uid/10000)*16777215).toString(16);
     //var color2 = "#" + Math.floor((uid/10000)*16777215).toString(16);
     path.strokeWidth = 10;
+    path.strokeColor = "#" + randomColor1.toString(16);
 
 
     // getting the URL (you may want to use for Exercise 3)
@@ -51,7 +52,7 @@
         tool.onMouseMove = function(event) { //http://paperjs.org/reference/tool/ path examples
             //var color = "#" + Math.floor((uid/10000)*16777215).toString(16);
             path.add(event.point);
-            path.strokeColor = "#" + randomColor1.toString(16);
+
             //path.strokeColor = color;
             //path2.strokeColor = color;
             // You may need to add code here if you want to pass any other information.
@@ -59,16 +60,16 @@
             socket.send("{\"x\" : " + event.point.x + ", \"y\" : " + event.point.y + ", \"uid\" : " + uid + ", \"color\" : " + randomColor1 + "}" );
         }
 
-        var path2 = new paper.Path();
+
         socket.onmessage = function(receivedMessage) {
             var received = JSON.parse(receivedMessage.data);
             console.log("Received: " + JSON.stringify(received));
             // You will probably want to add some code here to draw more lines.
-
+            path2.add(received);
             path2.strokeColor = "#" + received.color.toString(16);
             //path2.strokeColor = "#" + Math.floor((received.uid/10000)*16777215).toString(16);
             path2.strokeWidth = 10;
-            path2.add(received);
+
         }
 
 
